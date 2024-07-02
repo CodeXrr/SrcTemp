@@ -1,0 +1,92 @@
+//---------------=[ write_banner.c ]=-------------------->
+// --| Functionality for writing a banner with user-input
+// file name as displayed above. Keep It Simple Keep It Simple!
+// ======================================================|
+//
+//-| Basic/Essential Includes |---->
+#include <stdio.h> 
+#include <string.h> 
+#include <stdlib.h> 
+#include <errno.h> 
+//-| File Based Header Functions |----------------------->
+#include <unistd.h> 
+#include <fcntl.h> 
+#include <sys/stat.h> 
+
+#define BANNER_WIDTH 32
+#define BANNER_MIDBRK (BANNER_WIDTH/2)
+
+int write_banner(int fd, char *filename) {
+	size_t max_banner_sz = strlen(filename) + BANNER_WIDTH + 2; // 2 (space for fname)
+	char banner_buffer[max_banner_sz]; 
+
+	// Comment Out Banner First of All!
+	strcpy(banner_buffer, "//"); 
+
+	int saved_index=2; 
+	for (int i=2; i < BANNER_MIDBRK-2; i++) { 
+		banner_buffer[i] = '-'; 
+		saved_index++; 
+	}
+	banner_buffer[saved_index + 1] = '\0'; 
+	
+	strncat(banner_buffer, "=[ ", strlen(banner_buffer)); 
+	strncat(banner_buffer, filename, strlen(banner_buffer)); 
+	strncat(banner_buffer, " ]=", strlen(banner_buffer)); 
+
+	saved_index = strlen(banner_buffer); 
+	for (int i=saved_index; i < (max_banner_sz-2); i++) {
+		banner_buffer[i] = '-'; 
+		saved_index++; 
+	}
+
+	// ADD THE END CAP ARROW! 
+	strncat(banner_buffer, "->", strlen(banner_buffer)); 
+
+	if(write(fd, banner_buffer, strlen(banner_buffer)) == -1) {
+		perror("[!!] Writing to file: "); 
+		exit(-1); 
+	}
+
+
+	// [DEBUG/TEST] 
+	printf("banner_buffer @ (%p)/%ld bytes\n%s\n", &banner_buffer, strlen(banner_buffer), banner_buffer); 
+}
+//============================================================================================|
+// We need a function to check if a file-already exist in the current directory. 
+// RET: 0 if not true; 1 if true.
+int file_exist(char *filename) {
+#define DOES_NOT 0
+#define DOES 1 
+	int fd; 
+	fd = open(filename, O_RDONLY); 
+	if (fd == -1) {
+		close(fd);  
+		return DOES_NOT;
+	} else {
+		close(fd); 
+		return DOES;
+	}
+}
+
+#define FILENAME "test.c"
+
+int main(void) {
+	int fd; 
+
+	if(file_exist(FILENAME)) {
+		printf("[!!] \'%s\' ALREADY EXIST! To prevent accidently overwriting work\nremove file manually and try-again!\n", FILENAME); 
+	        exit(0); 
+	};		
+
+	fd = open(FILENAME, O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR); 
+	if(fd == -1) {
+		perror("[!!] Opening File/Creating NewFile\n"); 
+		exit(-1); 
+	}
+
+	write_banner(fd, FILENAME); 
+
+}
+
+		
